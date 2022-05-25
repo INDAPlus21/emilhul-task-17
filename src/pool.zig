@@ -6,7 +6,6 @@ const testing = std.testing;
 const PoolNode = struct {
     next: ?*PoolNode,
     ptr: usize,
-    id: usize,
 };
 
 pub const PoolAllocator = struct {
@@ -38,7 +37,6 @@ pub const PoolAllocator = struct {
             node.* = PoolNode{
                 .next = head,
                 .ptr = @ptrToInt(ptr),
-                .id = i,
             };
 
             head = node;
@@ -100,6 +98,8 @@ pub const PoolAllocator = struct {
         _ = ret_addr;
         _ = len_align;
         _ = buf;
+        _ = new_size;
+        return null;
     }
 
     // The linear allocator can't free memory
@@ -121,12 +121,14 @@ pub const PoolAllocator = struct {
             return;
         }
 
-        var node = PoolNode{
-             .next = self.head,
-             .ptr = node_ptr,
-             .id = 0,
+        var node = @ptrCast(*PoolNode, @alignCast(@alignOf(PoolNode), buf.ptr));
+
+        node.* = PoolNode{
+            .next = self.head,
+            .ptr = @ptrToInt(buf.ptr),
         };
-        self.head = &node;
+
+        self.head = node;
     }
 };
 
