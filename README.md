@@ -4,7 +4,7 @@ Allocators in zig. Currently three versions:
 
 * Linear which was provided as an example, not written by me. Used to compare results to.
 * Arena. A similiar allocator to the linear only I've made it myself. Main difference is that you can make the latest allocation larger since it doesn't risk growing into any other chunks.
-* Pool allocator that doesn't work. I think it kind of works in theory. The main issue seems to be with my initialization of the allocator. In the while loop it seems to update the first node and create pointers to itself instead of creating a new node each iteration as I'd expect.
+* Pool allocator works. Atleast for tests. Only slightly weird behaviour to beware about is that after freeing a poolNode the variable that was a pointer to it continues to point to the freed memory. Not sure if this is an issue but it's there.
 
 ## Run tests
 * Clone repo
