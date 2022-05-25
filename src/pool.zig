@@ -33,19 +33,17 @@ pub const PoolAllocator = struct {
         var i: usize = 0;
         while (i < chunk_count) {
             const ptr = &buf[i*chunk_size_align];
-            const node = @ptrCast(*PoolNode, @alignCast(@alignOf(PoolNode), ptr));
-            
+            var node = @ptrCast(*PoolNode, @alignCast(@alignOf(PoolNode), ptr));
+
             node.* = PoolNode{
                 .next = head,
                 .ptr = @ptrToInt(ptr),
                 .id = i,
             };
 
-            head = &node;
+            head = node;
             i += 1;
         }
-
-        std.debug.print("Original Head {d}\n\n", .{head});
 
         return PoolAllocator{
             .underlying = underlying,
@@ -85,7 +83,6 @@ pub const PoolAllocator = struct {
 
         self.head = self.head.?.next;
 
-        std.debug.print("New Head {d}\n\n", .{self.head});
         return allocation;
     }
 
@@ -97,15 +94,12 @@ pub const PoolAllocator = struct {
         len_align: u29,
         ret_addr: usize,
     ) ?usize {
+        // Can't resize
         _ = self;
         _ = buf_align;
         _ = ret_addr;
-
-        // We can't grow any allocation because we might grow into another one
-        if (new_size > buf.len) return null;
-
-        // But we can shrink the allocation easily
-        return std.mem.alignAllocLen(buf.len, new_size, len_align);
+        _ = len_align;
+        _ = buf;
     }
 
     // The linear allocator can't free memory
@@ -132,12 +126,7 @@ pub const PoolAllocator = struct {
              .ptr = node_ptr,
              .id = 0,
         };
-        
-        std.debug.print("Old Head {d}\n\n", .{self.head});
-
         self.head = &node;
-
-        std.debug.print("New Head {d}\n\n", .{self.head});
     }
 };
 
@@ -147,11 +136,19 @@ test "pool allocator test" {
     defer pool.deinit();
     const all = pool.allocator();
     assert(pool.head != null);
-    const arr = try all.alloc(u8, chunk_size);
+    var arr = try all.alloc(u8, chunk_size);
     assert(arr.len == chunk_size);
     all.free(arr);
-    // Why does this cause a segmentation fault
-    const arr2 = try all.alloc(u8, chunk_size);
+    arr = try all.alloc(u8, chunk_size);
+    var arr2 = try all.alloc(u8, chunk_size);
     assert(arr2.len == chunk_size);
+    arr[0] = 'T';
+    arr[1] = 'E';
+    arr[2] = 'S';
+    arr[3] = 'T';
 
+    arr2[0] = 'O';
+    arr2[1] = 'K';
+
+    std.debug.print("{s} = {s}\n", .{arr, arr2});
 }
